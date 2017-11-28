@@ -54,7 +54,7 @@ func newTAP(config Config) (ifce *Interface, err error) {
 	return
 }
 
-func newTUN(config Config) (ifce *Interface, err error) {
+func newTUN(config Config) (ifce *Interface, fd int, err error) {
 	file, err := os.OpenFile("/dev/net/tun", os.O_RDWR, 0)
 	if err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ func newTUN(config Config) (ifce *Interface, err error) {
 	}
 
 	ifce = &Interface{isTAP: false, ReadWriteCloser: file, name: name}
-	return
+	return ifce, file.Fd().pfd.Sysfd, nil
 }
 
 func createInterface(fd uintptr, ifName string, flags uint16) (createdIFName string, err error) {

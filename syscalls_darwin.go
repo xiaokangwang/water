@@ -61,8 +61,7 @@ type sockaddrCtl struct {
 
 var sockaddrCtlSize uintptr = 32
 
-func newTUN(config Config) (ifce *Interface, err error) {
-	var fd int
+func newTUN(config Config) (ifce *Interface, fd int, err error) {
 	// Supposed to be socket(PF_SYSTEM, SOCK_DGRAM, SYSPROTO_CONTROL), but ...
 	//
 	// In sys/socket.h:
@@ -71,7 +70,7 @@ func newTUN(config Config) (ifce *Interface, err error) {
 	// In sys/sys_domain.h:
 	// #define SYSPROTO_CONTROL       	2	/* kernel control protocol */
 	if fd, err = syscall.Socket(syscall.AF_SYSTEM, syscall.SOCK_DGRAM, 2); err != nil {
-		return nil, fmt.Errorf("error in syscall.Socket: %v", err)
+		return nil, 0, fmt.Errorf("error in syscall.Socket: %v", err)
 	}
 
 	var ctlInfo = &struct {
@@ -82,7 +81,7 @@ func newTUN(config Config) (ifce *Interface, err error) {
 
 	if _, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(fd), uintptr(appleCTLIOCGINFO), uintptr(unsafe.Pointer(ctlInfo))); errno != 0 {
 		err = errno
-		return nil, fmt.Errorf("error in syscall.Syscall(syscall.SYS_IOTL, ...): %v", err)
+		return nil, 0, fmt.Errorf("error in syscall.Syscall(syscall.SYS_IOTL, ...): %v", err)
 	}
 
 	addrP := unsafe.Pointer(&sockaddrCtl{
@@ -97,7 +96,7 @@ func newTUN(config Config) (ifce *Interface, err error) {
 	})
 	if _, _, errno := syscall.RawSyscall(syscall.SYS_CONNECT, uintptr(fd), uintptr(addrP), uintptr(sockaddrCtlSize)); errno != 0 {
 		err = errno
-		return nil, fmt.Errorf("error in syscall.RawSyscall(syscall.SYS_CONNECT, ...): %v", err)
+		return nil, 0, fmt.Errorf("error in syscall.RawSyscall(syscall.SYS_CONNECT, ...): %v", err)
 	}
 
 	var ifName struct {
@@ -110,7 +109,7 @@ func newTUN(config Config) (ifce *Interface, err error) {
 		uintptr(unsafe.Pointer(&ifName)),
 		uintptr(unsafe.Pointer(&ifNameSize)), 0); errno != 0 {
 		err = errno
-		return nil, fmt.Errorf("error in syscall.Syscall6(syscall.SYS_GETSOCKOPT, ...): %v", err)
+		return nil, 0, fmt.Errorf("error in syscall.Syscall6(syscall.SYS_GETSOCKOPT, ...): %v", err)
 	}
 
 	return &Interface{
@@ -119,11 +118,11 @@ func newTUN(config Config) (ifce *Interface, err error) {
 		ReadWriteCloser: &tunReadCloser{
 			f: os.NewFile(uintptr(fd), string(ifName.name[:])),
 		},
-	}, nil
+	}, fd, nil
 }
 
-func newTAP(config Config) (ifce *Interface, err error) {
-	return nil, errors.New("tap interface not implemented on this platform")
+func newTAP(config Config) (ifce *Interface, fd int, err error) {
+	return nil, 0, errors.New("tap interface not implemented on this platform")
 }
 
 // tunReadCloser is a hack to work around the first 4 bytes "packet

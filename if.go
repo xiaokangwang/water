@@ -49,7 +49,7 @@ func defaultConfig() Config {
 var zeroConfig Config
 
 // New creates a new TUN/TAP interface using config.
-func New(config Config) (ifce *Interface, err error) {
+func New(config Config) (ifce *Interface, fd int, err error) {
 	if zeroConfig == config {
 		config = defaultConfig()
 	}
@@ -59,7 +59,7 @@ func New(config Config) (ifce *Interface, err error) {
 	case TAP:
 		return newTAP(config)
 	default:
-		return nil, errors.New("unknown device type")
+		return nil, 0, errors.New("unknown device type")
 	}
 }
 
