@@ -30,10 +30,10 @@ func ioctl(fd uintptr, request uintptr, argp uintptr) error {
 	return nil
 }
 
-func newTAP(config Config) (ifce *Interface, err error) {
+func newTAP(config Config) (ifce *Interface, fd int, err error) {
 	file, err := os.OpenFile("/dev/net/tun", os.O_RDWR, 0)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	var flags uint16
@@ -43,21 +43,21 @@ func newTAP(config Config) (ifce *Interface, err error) {
 	}
 	name, err := createInterface(file.Fd(), config.Name, flags)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	if err = setDeviceOptions(file.Fd(), config); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	ifce = &Interface{isTAP: true, ReadWriteCloser: file, name: name}
-	return
+	return ifce, int(file.Fd()), nil
 }
 
 func newTUN(config Config) (ifce *Interface, fd int, err error) {
 	file, err := os.OpenFile("/dev/net/tun", os.O_RDWR, 0)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	var flags uint16
@@ -67,15 +67,15 @@ func newTUN(config Config) (ifce *Interface, fd int, err error) {
 	}
 	name, err := createInterface(file.Fd(), config.Name, flags)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	if err = setDeviceOptions(file.Fd(), config); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	ifce = &Interface{isTAP: false, ReadWriteCloser: file, name: name}
-	return ifce, file.Fd().pfd.Sysfd, nil
+	return ifce, int(file.Fd()), nil
 }
 
 func createInterface(fd uintptr, ifName string, flags uint16) (createdIFName string, err error) {
