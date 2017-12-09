@@ -3,7 +3,9 @@
 package water
 
 import (
+	"log"
 	"os"
+	"runtime"
 	"strings"
 	"syscall"
 	"unsafe"
@@ -22,6 +24,23 @@ type ifReq struct {
 	pad   [0x28 - 0x10 - 2]byte
 }
 
+const (
+	DevNetTun = "/dev/net/tun"
+	DevTun    = "/dev/tun"
+)
+
+var tunFile string
+
+func init() {
+	if _, err := os.Stat(DevNetTun); err == nil {
+		tunFile = DevNetTun
+	} else if _, err := os.Stat(DevTun); err == nil {
+		tunFile = DevTun
+	} else {
+		log.Fatal("NO support for", runtime.GOOS)
+	}
+}
+
 func ioctl(fd uintptr, request uintptr, argp uintptr) error {
 	_, _, errno := syscall.Syscall(syscall.SYS_IOCTL, fd, uintptr(request), argp)
 	if errno != 0 {
@@ -31,7 +50,7 @@ func ioctl(fd uintptr, request uintptr, argp uintptr) error {
 }
 
 func newTAP(config Config) (ifce *Interface, fd int, err error) {
-	file, err := os.OpenFile("/dev/net/tun", os.O_RDWR, 0)
+	file, err := os.OpenFile(tunFile, os.O_RDWR, 0)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -55,7 +74,7 @@ func newTAP(config Config) (ifce *Interface, fd int, err error) {
 }
 
 func newTUN(config Config) (ifce *Interface, fd int, err error) {
-	file, err := os.OpenFile("/dev/net/tun", os.O_RDWR, 0)
+	file, err := os.OpenFile(tunFile, os.O_RDWR, 0)
 	if err != nil {
 		return nil, 0, err
 	}
