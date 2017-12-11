@@ -12,7 +12,7 @@ import (
 // ifName cannot be specified on windows, you will need ifce.Name() to use some cmds.
 //
 // Deprecated: This function may be removed in the future. Please use New() instead.
-func NewTAP(ifName string) (ifce *Interface, fd int, err error) {
+func NewTAP(ifName string) (ifce *Interface, err error) {
 	fmt.Println("Deprecated: NewTAP(..) may be removed in the future. Please use New() instead.")
 	config := Config{DeviceType: TAP}
 	config.Name = ifName
@@ -24,7 +24,7 @@ func NewTAP(ifName string) (ifce *Interface, fd int, err error) {
 // ifName cannot be specified on windows, you will need ifce.Name() to use some cmds.
 //
 // Deprecated: This function will be removed in the future. Please use New() instead.
-func NewTUN(ifName string) (ifce *Interface, fd int, err error) {
+func NewTUN(ifName string) (ifce *Interface, err error) {
 	fmt.Println("Deprecated: NewTUN(..) may be removed in the future. Please use New() instead.")
 	config := Config{DeviceType: TUN}
 	config.Name = ifName

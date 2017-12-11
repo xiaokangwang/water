@@ -13,7 +13,8 @@ import (
 type Interface struct {
 	isTAP bool
 	io.ReadWriteCloser
-	name string
+	name  string
+	fd    int
 }
 
 // DeviceType is the type for specifying device types.
@@ -21,7 +22,7 @@ type DeviceType int
 
 // TUN and TAP device types.
 const (
-	_ = iota
+	_   = iota
 	TUN
 	TAP
 )
@@ -49,7 +50,7 @@ func defaultConfig() Config {
 var zeroConfig Config
 
 // New creates a new TUN/TAP interface using config.
-func New(config Config) (ifce *Interface, fd int, err error) {
+func New(config Config) (ifce *Interface, err error) {
 	if zeroConfig == config {
 		config = defaultConfig()
 	}
@@ -59,7 +60,7 @@ func New(config Config) (ifce *Interface, fd int, err error) {
 	case TAP:
 		return newTAP(config)
 	default:
-		return nil, 0, errors.New("unknown device type")
+		return nil, errors.New("unknown device type")
 	}
 }
 
@@ -76,4 +77,8 @@ func (ifce *Interface) IsTAP() bool {
 // Name returns the interface name of ifce, e.g. tun0, tap1, tun0, etc..
 func (ifce *Interface) Name() string {
 	return ifce.name
+}
+
+func (ifce *Interface) Fd() int {
+	return ifce.fd
 }

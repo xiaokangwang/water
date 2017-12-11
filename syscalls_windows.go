@@ -215,16 +215,16 @@ func setTUN(fd syscall.Handle, network string) error {
 }
 
 // openDev find and open an interface.
-func openDev(config Config) (ifce *Interface, fd int, err error) {
+func openDev(config Config) (ifce *Interface, err error) {
 	// find the device in registry.
 	deviceid, err := getdeviceid(config.PlatformSpecificParams.ComponentID)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	path := "\\\\.\\Global\\" + deviceid + ".tap"
 	pathp, err := syscall.UTF16PtrFromString(path)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	// type Handle uintptr
 	file, err := syscall.CreateFile(pathp, syscall.GENERIC_READ|syscall.GENERIC_WRITE, uint32(syscall.FILE_SHARE_READ|syscall.FILE_SHARE_WRITE), nil, syscall.OPEN_EXISTING, syscall.FILE_ATTRIBUTE_SYSTEM|syscall.FILE_FLAG_OVERLAPPED, 0)
@@ -238,7 +238,7 @@ func openDev(config Config) (ifce *Interface, fd int, err error) {
 		}
 	}()
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 	var bytesReturned uint32
 
@@ -246,7 +246,7 @@ func openDev(config Config) (ifce *Interface, fd int, err error) {
 	mac := make([]byte, 6)
 	err = syscall.DeviceIoControl(file, tap_win_ioctl_get_mac, &mac[0], uint32(len(mac)), &mac[0], uint32(len(mac)), &bytesReturned, nil)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	// fd := os.NewFile(uintptr(file), path)
@@ -258,19 +258,19 @@ func openDev(config Config) (ifce *Interface, fd int, err error) {
 	if err != nil {
 		return
 	}
-	fd = int(file)
 	wf := &wfile{fd: file, ro: ro, wo: wo}
 	ifce = &Interface{isTAP: (config.DeviceType == TAP), ReadWriteCloser: wf}
+	ifce.fd = int(file)
 
 	// bring up device.
 	if err := setStatus(file, true); err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	//TUN
 	if config.DeviceType == TUN {
 		if err := setTUN(file, config.PlatformSpecificParams.Network); err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 	}
 
@@ -287,13 +287,13 @@ func openDev(config Config) (ifce *Interface, fd int, err error) {
 		}
 	}
 
-	return nil, 0, errIfceNameNotFound
+	return nil, errIfceNameNotFound
 }
 
-func newTAP(config Config) (ifce *Interface, fd int, err error) {
+func newTAP(config Config) (ifce *Interface, err error) {
 	return openDev(config)
 }
 
-func newTUN(config Config) (ifce *Interface, fd int, err error) {
+func newTUN(config Config) (ifce *Interface, err error) {
 	return openDev(config)
 }
